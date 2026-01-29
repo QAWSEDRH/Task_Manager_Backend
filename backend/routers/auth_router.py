@@ -4,6 +4,8 @@ from fastapi import APIRouter
 from fastapi.security import HTTPBearer
 from backend.schemas.auth_schemas import SignUpSchema, LoginSchema
 from backend.database.database_documents import User
+from datetime import timedelta
+
 
 
 import asyncio
@@ -12,21 +14,19 @@ import bcrypt
 auth_router = APIRouter()
 
 
-async def find_user(name: str):
-    user = await User.find_one(User.name == name)
-    if not user:
-        raise HTTPException(404, "User not found")
-    return user
+
 
 
 
 
 config = AuthXConfig()
 config.JWT_SECRET_KEY = "secret"
+config.JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=60)
 config.JWT_TOKEN_LOCATION = ["headers"]
 config.JWT_HEADER_NAME = "Authorization"
 config.JWT_HEADER_TYPE = "Bearer"
 security = HTTPBearer()
+
 
 
 auth = AuthX(config=config)
@@ -54,15 +54,23 @@ async def verify_password(password: str, hashed: str) -> bool:
     )
 
 
-async def check_to_no_exist(name: str):
-    existing_user = await User.find_one(User.name == name)
+async def check_to_no_exist(email):
+    existing_user = await User.find_one(User.email == email)
     if existing_user:
         raise HTTPException(400, "user already exists")
 
 
+async def find_user(user_id: str):
+    user = await User.get(user_id)
+    if not user:
+        raise HTTPException(404, "User not found")
+    return user
+
+
+
 @auth_router.post("/sign_up")
 async def sign_up(creds: SignUpSchema):
-    await check_to_no_exist(creds.name)
+    await check_to_no_exist(creds.email)
 
     hashed_password = await hash_password(creds.password)
 
@@ -74,7 +82,8 @@ async def sign_up(creds: SignUpSchema):
     )
     await new_user.insert()
 
-    token = auth.create_access_token(uid=creds.name)
+    token = auth.create_access_token(uid=str(new_user.id))
+
 
     return {
         "message": "success",
@@ -84,27 +93,41 @@ async def sign_up(creds: SignUpSchema):
 
 @auth_router.post("/login")
 async def login(creds: LoginSchema):
-    user = await find_user(creds.name)
+    # ищем по email только для логина
+    user = await User.find_one(User.email == creds.email)
+    if not user:
+        raise HTTPException(404, "User not found")
 
     if not await verify_password(creds.password, user.password):
         raise HTTPException(400, "Incorrect password")
 
-    token = auth.create_access_token(uid=creds.name)
-
-    return {"name": creds.name,"access_token": token}
+    token = auth.create_access_token(uid=str(user.id))
 
 
 
 
+    return {
+        "name": user.name,
+        "access_token": token,
+    }
 
 
-@auth_router.get("/protected")
-async def protected_route(user = Depends(auth.access_token_required)):
-    return {"message": "OK"}
+@auth_router.get("/me")
+async def protected_route(payload = Depends(auth.access_token_required)):
+    user = await find_user(payload["uid"])
+
+    return {
+        "name": user.name,
+        "surname": user.surname,
+        "email": user.email,
+    }
 
 
 
-__all__ = ["auth_router", "auth", "find_user"]
+
+
+
+
 
 
 

@@ -1,9 +1,10 @@
 from pydantic import BaseModel
 from typing import Optional
-from backend.database.database_documents import Task_Categories, Complete_Status
-
+from backend.database.database_documents import Task_Categories
+from datetime import datetime
 
 class CreateTaskSchema(BaseModel):
+
     title: str
     description: str
     exp_time: Optional[str] = None
@@ -11,7 +12,10 @@ class CreateTaskSchema(BaseModel):
     completed: Optional[bool] = False
 
 
+
+
 class DeleteTaskSchema(BaseModel):
+
     task_id: str
 
 
@@ -20,4 +24,5 @@ class UpdateTaskSchema(BaseModel):
     description: Optional[str] = None
     exp_time: Optional[str] = None
     category: Optional[Task_Categories] = None
-    completed: Optional[Complete_Status] = None
+    completed: Optional[bool] = None
+

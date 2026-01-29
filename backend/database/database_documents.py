@@ -1,5 +1,9 @@
 from beanie import Document
 from enum import Enum
+from datetime import datetime
+from beanie import PydanticObjectId
+from pydantic import Field
+
 
 class User(Document):
     name:str
@@ -16,16 +20,15 @@ class Task_Categories(str,Enum):
     own_bussiness_task = "own_bussiness_task"
     no_category_task  = "no_category_task"
 
-class Complete_Status(str,Enum):
-    completed = "completed"
-    not_completed = "not_completed"
+
 
 
 class Task(Document):
     title:str
     description:str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
     exp_time:str
-    creator_name:str
+    creator_id: PydanticObjectId
     category: Task_Categories = Task_Categories.no_category_task
     completed: bool = False
 

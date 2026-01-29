@@ -7,5 +7,5 @@ class SignUpSchema(BaseModel):
     password:str
 
 class LoginSchema(BaseModel):
-    name:str
+    email:str
     password:str
