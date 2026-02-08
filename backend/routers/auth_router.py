@@ -84,7 +84,6 @@ async def sign_up(creds: SignUpSchema):
 
     token = auth.create_access_token(uid=str(new_user.id))
 
-
     return {
         "message": "success",
         "access_token": token
@@ -102,6 +101,7 @@ async def login(creds: LoginSchema):
         raise HTTPException(400, "Incorrect password")
 
     token = auth.create_access_token(uid=str(user.id))
+
 
 
 
