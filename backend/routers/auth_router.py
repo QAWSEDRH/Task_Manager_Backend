@@ -5,17 +5,14 @@ from fastapi.security import HTTPBearer
 from backend.schemas.auth_schemas import SignUpSchema, LoginSchema
 from backend.database.database_documents import User
 from datetime import timedelta
-
+from backend.utils.limit import limiter
+from fastapi import Request
 
 
 import asyncio
 import bcrypt
 
 auth_router = APIRouter()
-
-
-
-
 
 
 
@@ -69,7 +66,8 @@ async def find_user(user_id: str):
 
 
 @auth_router.post("/sign_up")
-async def sign_up(creds: SignUpSchema):
+@limiter.limit("2/minute")
+async def sign_up(creds: SignUpSchema,request:Request):
     await check_to_no_exist(creds.email)
 
     hashed_password = await hash_password(creds.password)
@@ -89,9 +87,9 @@ async def sign_up(creds: SignUpSchema):
         "access_token": token
     }
 
-
+@limiter.limit("20/minute")
 @auth_router.post("/login")
-async def login(creds: LoginSchema):
+async def login(creds: LoginSchema,request:Request):
     # ищем по email только для логина
     user = await User.find_one(User.email == creds.email)
     if not user:
@@ -105,15 +103,14 @@ async def login(creds: LoginSchema):
 
 
 
-
     return {
         "name": user.name,
         "access_token": token,
     }
 
-
+@limiter.limit("20/minute")
 @auth_router.get("/me")
-async def protected_route(payload = Depends(auth.access_token_required)):
+async def protected_route(request:Request,payload = Depends(auth.access_token_required)):
     user = await find_user(payload["uid"])
 
     return {

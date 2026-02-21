@@ -1,7 +1,9 @@
+from optparse import Option
+from typing import Optional
+
 from beanie import Document
 from enum import Enum
-from datetime import datetime
-from pydantic import Field
+from beanie import Document
 from bson import ObjectId
 from beanie import PydanticObjectId
 
@@ -29,9 +31,8 @@ class TaskCategories(str, Enum):
     no_category_task = "no_category_task"
 
 
-from beanie import Document
-from pydantic import Field
-from datetime import datetime
+
+
 
 
 class Task(Document):
@@ -39,7 +40,7 @@ class Task(Document):
     title: str
     description: str
     created_at: str
-    exp_time: str
+    exp_time: Optional[str] = None
     creator_id: PydanticObjectId
     category: str = "no_category_task"
     completed: bool = False
